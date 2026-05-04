@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Railway Track Allocation</title>
+
+<style>
+body {
+    font-family: 'Segoe UI';
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    color: white;
+    margin: 0;
+}
+
+.container {
+    width: 90%;
+    margin: auto;
+    padding: 20px;
+}
+
+.card {
+    background: rgba(255,255,255,0.1);
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+}
+
+input {
+    padding: 10px;
+    margin: 5px;
+    border-radius: 8px;
+    border: none;
+}
+
+button {
+    padding: 10px 15px;
+    background: #00c6ff;
+    border: none;
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #0072ff;
+}
+
+table {
+    width: 100%;
+    margin-top: 10px;
+    background: white;
+    color: black;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+th, td {
+    padding: 10px;
+    text-align: center;
+}
+
+th {
+    background: #0072ff;
+    color: white;
+}
+
+.safe {
+    color: lightgreen;
+    font-weight: bold;
+}
+
+.unsafe {
+    color: red;
+    font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>🚆 Railway Track Allocation System</h1>
+
+<div class="card">
+<h3>Add Train</h3>
+<input id="name" placeholder="Train Name">
+<input id="alloc" type="number" placeholder="Allocated">
+<input id="max" type="number" placeholder="Max">
+<button onclick="add()">Add</button>
+</div>
+
+<div class="card">
+<h3>Available Tracks</h3>
+<input id="available" type="number">
+<button onclick="run()">Run Banker</button>
+</div>
+
+<div class="card">
+<h3>Train Table</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Alloc</th>
+<th>Max</th>
+<th>Need</th>
+</tr>
+</thead>
+<tbody id="table"></tbody>
+</table>
+</div>
+
+<div class="card">
+<h3>Result</h3>
+<p id="result"></p>
+<p id="sequence"></p>
+</div>
+
+</div>
+
+<script>
+
+async function add() {
+    let name = document.getElementById("name").value;
+    let alloc = parseInt(document.getElementById("alloc").value);
+    let max = parseInt(document.getElementById("max").value);
+
+    let res = await fetch("/add", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ name, alloc, max })
+    });
+
+    let data = await res.json();
+
+    if (data.error) {
+        alert(data.error);
+        return;
+    }
+
+    display(data.processes);
+}
+
+function display(list) {
+    let table = document.getElementById("table");
+    table.innerHTML = "";
+
+    list.forEach(p => {
+        table.innerHTML += `
+        <tr>
+            <td>${p.name}</td>
+            <td>${p.alloc}</td>
+            <td>${p.max}</td>
+            <td>${p.need}</td>
+        </tr>`;
+    });
+}
+
+async function run() {
+    let available = parseInt(document.getElementById("available").value);
+
+    let res = await fetch("/run", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ available })
+    });
+
+    let data = await res.json();
+
+    if (data.safe) {
+        document.getElementById("result").innerHTML =
+            "<span class='safe'>SAFE STATE</span>";
+        document.getElementById("sequence").innerHTML =
+            "Sequence: " + data.sequence.join(" → ");
+    } else {
+        document.getElementById("result").innerHTML =
+            "<span class='unsafe'>UNSAFE STATE</span>";
+        document.getElementById("sequence").innerHTML = "";
+    }
+}
+
+</script>
+
+</body>
+</html>
