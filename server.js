@@ -1,29 +1,34 @@
 const express = require("express");
+const path = require("path"); 
 const app = express();
+
 app.use(express.json());
-app.use(express.static("public"));
+
+// Serves your HTML/CSS/JS files from the 'public' folder
+app.use(express.static(path.join(__dirname, "public")));
 
 let processes = [];
 
 app.post("/add", (req, res) => {
     const { name, alloc, max } = req.body;
 
-    if (alloc > max) {
+    // Validation to ensure data integrity
+    if (parseInt(alloc) > parseInt(max)) {
         return res.json({ error: "Allocation > Max not allowed" });
     }
 
     processes.push({
         name,
-        alloc,
-        max,
-        need: max - alloc
+        alloc: parseInt(alloc),
+        max: parseInt(max),
+        need: parseInt(max) - parseInt(alloc)
     });
 
     res.json({ success: true, processes });
 });
 
 app.post("/run", (req, res) => {
-    let available = req.body.available;
+    let available = parseInt(req.body.available);
 
     let work = available;
     let finish = new Array(processes.length).fill(false);
@@ -31,6 +36,7 @@ app.post("/run", (req, res) => {
 
     let count = 0;
 
+    // Banker's Algorithm Logic
     while (count < processes.length) {
         let found = false;
 
@@ -59,4 +65,11 @@ app.post("/run", (req, res) => {
     }
 });
 
-app.listen(3000, () => console.log("Server running on http://localhost:3000"));
+// Port handling for local vs production
+if (process.env.NODE_ENV !== 'production') {
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+}
+
+// Export for Vercel/Netlify
+module.exports = app;
